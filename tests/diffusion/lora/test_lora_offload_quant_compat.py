@@ -22,6 +22,7 @@ from vllm.lora.peft_helper import PEFTHelper
 from vllm.model_executor.layers.linear import QKVParallelLinear, ReplicatedLinear
 
 from tests.diffusion.offloader.helpers import DummyStream, patch_offload_runtime
+from tests.helpers.mark import hardware_test
 from vllm_omni.diffusion.lora.layers import (
     DiffusionMergedQKVParallelLinearWithLoRA,
     DiffusionReplicatedLinearWithLoRA,
@@ -307,6 +308,7 @@ def test_lora_buffers_are_not_parameters_or_registered_buffers(monkeypatch):
         assert not any(id(t) in registered for t in _lora_tensors(wrapper))
 
 
+@hardware_test(res={"cuda": "L4"}, num_cards=1)
 def test_model_level_offload_moves_base_weights_but_not_lora_buffers(accelerator_device, monkeypatch):
     pipeline = _Pipeline(fp8=True).to(accelerator_device)
     manager = _manager(pipeline, {}, monkeypatch, accelerator_device)
@@ -327,6 +329,7 @@ def test_model_level_offload_moves_base_weights_but_not_lora_buffers(accelerator
             torch.testing.assert_close(current, original)
 
 
+@hardware_test(res={"cuda": "L4"}, num_cards=1)
 def test_sequential_offload_cycle_keeps_lora_output_and_buffers(accelerator_device, monkeypatch):
     class _Encoder(torch.nn.Module):
         def __init__(self):
